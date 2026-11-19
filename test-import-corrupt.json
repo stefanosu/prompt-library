@@ -1,0 +1,9 @@
+{
+  "type": "prompt-library-backup",
+  "schemaVersion": 1,
+  "data": {
+    "prompts": [
+      {
+        "id": "corrupt",
+        "title": "Missing closing brace",
+        "content": "This JSON is malformed"

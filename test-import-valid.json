@@ -1,0 +1,66 @@
+{
+  "type": "prompt-library-backup",
+  "schemaVersion": 1,
+  "exportedAt": "2026-11-19T16:00:00.000Z",
+  "application": "Prompt Library",
+  "meta": {
+    "stats": {
+      "totalPrompts": 2,
+      "averageRating": 4.5,
+      "mostUsedModel": "gpt-4o"
+    },
+    "storageKeys": {
+      "prompts": "promptLibrary.items.v1",
+      "notes": "promptNotes.v1"
+    },
+    "sourceUrl": "http://localhost:8000"
+  },
+  "data": {
+    "prompts": [
+      {
+        "id": "import_valid_1",
+        "title": "SQL Query Generator",
+        "content": "Generate a SQL query to: {task}\n\nDatabase schema: {schema}\n\nRequirements:\n- Use best practices\n- Add comments\n- Optimize for performance",
+        "userRating": 5,
+        "metadata": {
+          "model": "gpt-4o",
+          "createdAt": "2026-11-18T10:30:00.000Z",
+          "updatedAt": "2026-11-18T10:30:00.000Z",
+          "tokenEstimate": {
+            "min": 25,
+            "max": 35,
+            "confidence": "high"
+          },
+          "_v": "v1"
+        }
+      },
+      {
+        "id": "import_valid_2",
+        "title": "Meeting Summary",
+        "content": "Summarize this meeting transcript:\n\n{transcript}\n\nInclude:\n- Key decisions\n- Action items with owners\n- Follow-up dates",
+        "userRating": 4,
+        "metadata": {
+          "model": "claude-sonnet-4",
+          "createdAt": "2026-11-19T09:15:00.000Z",
+          "updatedAt": "2026-11-19T09:15:00.000Z",
+          "tokenEstimate": {
+            "min": 20,
+            "max": 28,
+            "confidence": "medium"
+          },
+          "_v": "v1"
+        }
+      }
+    ],
+    "notes": {
+      "import_valid_1": [
+        {
+          "id": "note_valid_1",
+          "content": "Works well with PostgreSQL and MySQL",
+          "createdAt": 1700400000000,
+          "updatedAt": 1700400000000
+        }
+      ]
+    }
+  }
+}

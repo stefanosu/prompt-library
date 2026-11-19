@@ -1,0 +1,6 @@
+{
+  "type": "wrong-type",
+  "version": "not-a-number",
+  "data": "this should be an object",
+  "randomField": true
+}

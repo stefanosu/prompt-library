@@ -1,0 +1,22 @@
+{
+  "prompts": [
+    {
+      "id": "legacy_obj_1",
+      "title": "Data Visualization Suggester",
+      "content": "Suggest the best data visualization for this dataset:\n\n{dataset_description}\n\nConsider: audience, message, and data type.",
+      "model": "gpt-4o",
+      "createdAt": "2026-11-17T16:30:00.000Z",
+      "userRating": 3
+    }
+  ],
+  "notes": {
+    "legacy_obj_1": [
+      {
+        "id": "note_legacy_1",
+        "content": "Great for dashboard planning",
+        "createdAt": 1700500000000,
+        "updatedAt": 1700500000000
+      }
+    ]
+  }
+}

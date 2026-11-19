@@ -1,0 +1,74 @@
+{
+  "type": "prompt-library-backup",
+  "schemaVersion": 1,
+  "exportedAt": "2026-11-19T17:00:00.000Z",
+  "application": "Prompt Library",
+  "meta": {
+    "stats": {
+      "totalPrompts": 3,
+      "averageRating": 4,
+      "mostUsedModel": "gpt-4o"
+    },
+    "storageKeys": {
+      "prompts": "promptLibrary.items.v1",
+      "notes": "promptNotes.v1"
+    },
+    "sourceUrl": "http://localhost:8000"
+  },
+  "data": {
+    "prompts": [
+      {
+        "id": "test_p1",
+        "title": "Blog Post Generator - UPDATED VERSION",
+        "content": "Write an UPDATED comprehensive blog post about {topic} with ENHANCED SEO optimization and social media hooks",
+        "userRating": 5,
+        "metadata": {
+          "model": "gpt-4o",
+          "createdAt": "2026-11-15T10:00:00.000Z",
+          "updatedAt": "2026-11-19T17:00:00.000Z",
+          "tokenEstimate": {
+            "min": 20,
+            "max": 30,
+            "confidence": "high"
+          },
+          "_v": "v1"
+        }
+      },
+      {
+        "id": "test_p2",
+        "title": "Code Review Assistant - ENHANCED",
+        "content": "Review this code with ADVANCED analysis for best practices, security issues, performance, and architecture: {code}",
+        "userRating": 5,
+        "metadata": {
+          "model": "claude-opus-4",
+          "createdAt": "2026-11-16T14:30:00.000Z",
+          "updatedAt": "2026-11-19T17:00:00.000Z",
+          "tokenEstimate": {
+            "min": 30,
+            "max": 40,
+            "confidence": "high"
+          },
+          "_v": "v1"
+        }
+      },
+      {
+        "id": "new_unique_prompt",
+        "title": "Unit Test Generator",
+        "content": "Generate comprehensive unit tests for this function:\n\n{code}\n\nFramework: {framework}\n\nInclude edge cases and mocks.",
+        "userRating": 4,
+        "metadata": {
+          "model": "gpt-4o",
+          "createdAt": "2026-11-19T16:45:00.000Z",
+          "updatedAt": "2026-11-19T16:45:00.000Z",
+          "tokenEstimate": {
+            "min": 25,
+            "max": 35,
+            "confidence": "medium"
+          },
+          "_v": "v1"
+        }
+      }
+    ],
+    "notes": {}
+  }
+}

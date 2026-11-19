@@ -1,0 +1,16 @@
+[
+  {
+    "id": "legacy_array_1",
+    "title": "API Documentation Writer",
+    "content": "Write comprehensive API documentation for: {endpoint}\n\nInclude examples, parameters, and error codes.",
+    "model": "gpt-4o-mini",
+    "createdAt": "2026-11-15T14:20:00.000Z"
+  },
+  {
+    "id": "legacy_array_2",
+    "title": "Bug Report Analyzer",
+    "content": "Analyze this bug report and suggest root cause:\n\n{bug_description}",
+    "model": "claude-sonnet-3-5",
+    "createdAt": "2026-11-16T11:45:00.000Z"
+  }
+]

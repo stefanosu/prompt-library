@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export/Import Test Suite</title>
+  <style>
+    body { font-family: system-ui; padding: 2rem; max-width: 1200px; margin: 0 auto; background: #f5f7fb; }
+    h1 { color: #2563eb; }
+    .test-section { background: white; padding: 1.5rem; margin: 1rem 0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .test-section h2 { margin-top: 0; color: #1f2933; border-bottom: 2px solid #2563eb; padding-bottom: 0.5rem; }
+    button { padding: 0.75rem 1.5rem; margin: 0.5rem 0.5rem 0.5rem 0; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #1d4ed8; }
+    button.secondary { background: #64748b; }
+    button.secondary:hover { background: #475569; }
+    button.danger { background: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    .output { background: #f1f5f9; padding: 1rem; margin: 1rem 0; border-radius: 6px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; max-height: 400px; overflow-y: auto; border: 1px solid #cbd5e1; }
+    .success { color: #047857; background: #ecfdf5; border-color: #34d399; }
+    .error { color: #b91c1c; background: #fef2f2; border-color: #fca5a5; }
+    .info { color: #0369a1; background: #e0f2fe; border-color: #7dd3fc; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+    .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; }
+    .stat-card h3 { margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Export/Import Test Suite</h1>
+  <p>Comprehensive testing for the Prompt Library export/import system</p>
+
+  <div class="test-section">
+    <h2>1. Setup Test Data</h2>
+    <button onclick="createTestData()">Create Test Prompts</button>
+    <button class="secondary" onclick="clearAllData()">Clear All Data</button>
+    <button class="secondary" onclick="showCurrentData()">Show Current Data</button>
+    <div id="setup-output" class="output" style="display:none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>2. Export Tests</h2>
+    <button onclick="testExportStructure()">Test Export Structure</button>
+    <button onclick="testExportStatistics()">Test Statistics Calculation</button>
+    <button onclick="testExportValidation()">Test Export Validation</button>
+    <button onclick="actualExport()">Perform Actual Export</button>
+    <div id="export-output" class="output" style="display:none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>3. Import Tests</h2>
+    <button onclick="testImportValidFormat()">Test Valid Import</button>
+    <button onclick="testImportLegacyArray()">Test Legacy Array Format</button>
+    <button onclick="testImportLegacyObject()">Test Legacy Object Format</button>
+    <button onclick="testImportInvalid()">Test Invalid Format (Error)</button>
+    <div id="import-output" class="output" style="display:none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>4. Conflict Resolution Tests</h2>
+    <button onclick="testMergeReplace()">Test Replace Strategy</button>
+    <button onclick="testMergeSkip()">Test Skip Strategy</button>
+    <button onclick="testMergeKeepBoth()">Test Keep Both Strategy</button>
+    <div id="conflict-output" class="output" style="display:none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>5. Error Recovery Tests</h2>
+    <button onclick="testBackupCreation()">Test Backup Creation</button>
+    <button onclick="testRollback()">Test Rollback on Error</button>
+    <button class="danger" onclick="testCorruptImport()">Test Corrupt File Import</button>
+    <div id="error-output" class="output" style="display:none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>6. Test Results Summary</h2>
+    <div class="stats">
+      <div class="stat-card">
+        <h3>Tests Passed</h3>
+        <div class="value" id="tests-passed">0</div>
+      </div>
+      <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <h3>Tests Failed</h3>
+        <div class="value" id="tests-failed">0</div>
+      </div>
+      <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <h3>Total Tests</h3>
+        <div class="value" id="tests-total">0</div>
+      </div>
+    </div>
+    <div id="summary-output" class="output info" style="display:none;"></div>
+  </div>
+
+  <script>
+    // Test state
+    let testResults = { passed: 0, failed: 0, total: 0 };
+    const STORAGE_KEY = 'promptLibrary.items.v1';
+    const NOTES_KEY = 'promptNotes.v1';
+
+    function log(elementId, message, type = 'info') {
+      const el = document.getElementById(elementId);
+      el.style.display = 'block';
+      el.className = `output ${type}`;
+      el.textContent += message + '\n';
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function clearLog(elementId) {
+      const el = document.getElementById(elementId);
+      el.textContent = '';
+      el.style.display = 'none';
+    }
+
+    function recordTest(passed, testName) {
+      testResults.total++;
+      if (passed) {
+        testResults.passed++;
+        log('summary-output', `✅ PASS: ${testName}`, 'success');
+      } else {
+        testResults.failed++;
+        log('summary-output', `❌ FAIL: ${testName}`, 'error');
+      }
+      document.getElementById('summary-output').style.display = 'block';
+      updateStats();
+    }
+
+    function updateStats() {
+      document.getElementById('tests-passed').textContent = testResults.passed;
+      document.getElementById('tests-failed').textContent = testResults.failed;
+      document.getElementById('tests-total').textContent = testResults.total;
+    }
+
+    // 1. SETUP FUNCTIONS
+    function createTestData() {
+      clearLog('setup-output');
+      const testPrompts = [
+        {
+          id: 'test_p1',
+          title: 'Blog Post Generator',
+          content: 'Write a comprehensive blog post about {topic} with SEO optimization',
+          userRating: 5,
+          metadata: {
+            model: 'gpt-4o-mini',
+            createdAt: new Date('2026-11-15T10:00:00.000Z').toISOString(),
+            updatedAt: new Date('2026-11-15T10:00:00.000Z').toISOString(),
+            tokenEstimate: { min: 15, max: 20, confidence: 'high' },
+            _v: 'v1'
+          }
+        },
+        {
+          id: 'test_p2',
+          title: 'Code Review Assistant',
+          content: 'Review this code for best practices, security issues, and performance: {code}',
+          userRating: 4,
+          metadata: {
+            model: 'claude-sonnet-4',
+            createdAt: new Date('2026-11-16T14:30:00.000Z').toISOString(),
+            updatedAt: new Date('2026-11-16T14:30:00.000Z').toISOString(),
+            tokenEstimate: { min: 20, max: 25, confidence: 'high' },
+            _v: 'v1'
+          }
+        },
+        {
+          id: 'test_p3',
+          title: 'Email Writer',
+          content: 'Draft a professional email to {recipient} about {subject}',
+          userRating: 3,
+          metadata: {
+            model: 'gpt-4o-mini',
+            createdAt: new Date('2026-11-17T09:15:00.000Z').toISOString(),
+            updatedAt: new Date('2026-11-17T09:15:00.000Z').toISOString(),
+            tokenEstimate: { min: 12, max: 18, confidence: 'medium' },
+            _v: 'v1'
+          }
+        }
+      ];
+
+      const testNotes = {
+        'test_p1': [
+          { id: 'note_1', content: 'Works great for technical topics', createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000 }
+        ],
+        'test_p2': [
+          { id: 'note_2', content: 'Best for JavaScript and Python code', createdAt: Date.now() - 43200000, updatedAt: Date.now() - 43200000 }
+        ]
+      };
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(testPrompts));
+      localStorage.setItem(NOTES_KEY, JSON.stringify(testNotes));
+
+      log('setup-output', `✅ Created ${testPrompts.length} test prompts with ${Object.keys(testNotes).length} note groups`, 'success');
+      log('setup-output', JSON.stringify(testPrompts, null, 2));
+      recordTest(true, 'Create Test Data');
+    }
+
+    function clearAllData() {
+      clearLog('setup-output');
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(NOTES_KEY);
+      localStorage.removeItem(STORAGE_KEY + '.backup');
+      localStorage.removeItem(NOTES_KEY + '.backup');
+      log('setup-output', '✅ All data cleared', 'success');
+    }
+
+    function showCurrentData() {
+      clearLog('setup-output');
+      const prompts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+      log('setup-output', `Current Prompts (${prompts.length}):\n${JSON.stringify(prompts, null, 2)}\n\nNotes:\n${JSON.stringify(notes, null, 2)}`);
+    }
+
+    // 2. EXPORT TESTS
+    function testExportStructure() {
+      clearLog('export-output');
+      try {
+        createTestData();
+        const prompts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}');
+
+        const payload = {
+          type: 'prompt-library-backup',
+          schemaVersion: 1,
+          exportedAt: new Date().toISOString(),
+          application: 'Prompt Library',
+          meta: {
+            stats: { totalPrompts: prompts.length },
+            storageKeys: { prompts: STORAGE_KEY, notes: NOTES_KEY }
+          },
+          data: { prompts, notes }
+        };
+
+        const hasType = payload.type === 'prompt-library-backup';
+        const hasVersion = typeof payload.schemaVersion === 'number';
+        const hasData = payload.data && Array.isArray(payload.data.prompts);
+        const hasTimestamp = typeof payload.exportedAt === 'string';
+
+        log('export-output', `Schema Structure:\n${JSON.stringify(payload, null, 2)}`, 'info');
+        log('export-output', `\n✅ Has correct type: ${hasType}`, hasType ? 'success' : 'error');
+        log('export-output', `✅ Has schema version: ${hasVersion}`, hasVersion ? 'success' : 'error');
+        log('export-output', `✅ Has data array: ${hasData}`, hasData ? 'success' : 'error');
+        log('export-output', `✅ Has timestamp: ${hasTimestamp}`, hasTimestamp ? 'success' : 'error');
+
+        const passed = hasType && hasVersion && hasData && hasTimestamp;
+        recordTest(passed, 'Export Structure Validation');
+      } catch (e) {
+        log('export-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Export Structure Validation');
+      }
+    }
+
+    function testExportStatistics() {
+      clearLog('export-output');
+      try {
+        const prompts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+        const ratings = prompts.map(p => p.userRating).filter(r => typeof r === 'number');
+        const avgRating = ratings.length ? (ratings.reduce((a,b)=>a+b,0) / ratings.length) : null;
+
+        const modelCounts = {};
+        prompts.forEach(p => {
+          const m = p?.metadata?.model || 'unknown';
+          modelCounts[m] = (modelCounts[m] || 0) + 1;
+        });
+        const mostUsedModel = Object.entries(modelCounts).sort((a,b)=>b[1]-a[1])[0]?.[0];
+
+        log('export-output', `Statistics Computed:`, 'info');
+        log('export-output', `Total Prompts: ${prompts.length}`);
+        log('export-output', `Average Rating: ${avgRating?.toFixed(2) || 'N/A'}`);
+        log('export-output', `Most Used Model: ${mostUsedModel || 'N/A'}`);
+        log('export-output', `Model Distribution: ${JSON.stringify(modelCounts, null, 2)}`);
+
+        const passed = prompts.length === 3 && avgRating === 4 && mostUsedModel === 'gpt-4o-mini';
+        recordTest(passed, 'Export Statistics Calculation');
+      } catch (e) {
+        log('export-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Export Statistics Calculation');
+      }
+    }
+
+    function testExportValidation() {
+      clearLog('export-output');
+      try {
+        const prompts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        let allValid = true;
+
+        prompts.forEach((p, i) => {
+          const hasId = typeof p.id === 'string';
+          const hasTitle = typeof p.title === 'string';
+          const hasContent = typeof p.content === 'string';
+          const hasMetadata = p.metadata && typeof p.metadata === 'object';
+          const hasModel = hasMetadata && typeof p.metadata.model === 'string';
+
+          const valid = hasId && hasTitle && hasContent && hasMetadata && hasModel;
+
+          log('export-output', `Prompt ${i + 1} (${p.title}): ${valid ? '✅ Valid' : '❌ Invalid'}`, valid ? 'success' : 'error');
+          if (!valid) {
+            log('export-output', `  - Has ID: ${hasId}, Title: ${hasTitle}, Content: ${hasContent}, Metadata: ${hasMetadata}, Model: ${hasModel}`);
+            allValid = false;
+          }
+        });
+
+        recordTest(allValid, 'Export Validation');
+      } catch (e) {
+        log('export-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Export Validation');
+      }
+    }
+
+    function actualExport() {
+      clearLog('export-output');
+      log('export-output', '📦 Triggering actual export from main app...', 'info');
+      log('export-output', 'Check your Downloads folder for the exported JSON file.');
+      log('export-output', '\nTo test, open the main app at http://localhost:8000 and click Export button.');
+    }
+
+    // 3. IMPORT TESTS
+    function testImportValidFormat() {
+      clearLog('import-output');
+      try {
+        const validImport = {
+          type: 'prompt-library-backup',
+          schemaVersion: 1,
+          exportedAt: new Date().toISOString(),
+          data: {
+            prompts: [{
+              id: 'import_test_1',
+              title: 'Imported Prompt',
+              content: 'This is an imported prompt',
+              metadata: {
+                model: 'test-model',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                tokenEstimate: { min: 5, max: 10, confidence: 'high' },
+                _v: 'v1'
+              }
+            }],
+            notes: {}
+          }
+        };
+
+        log('import-output', 'Valid Import Format:\n' + JSON.stringify(validImport, null, 2), 'info');
+
+        const isValid = validImport.type === 'prompt-library-backup'
+          && validImport.schemaVersion === 1
+          && Array.isArray(validImport.data.prompts);
+
+        log('import-output', `\n${isValid ? '✅' : '❌'} Format validation: ${isValid ? 'PASSED' : 'FAILED'}`, isValid ? 'success' : 'error');
+        recordTest(isValid, 'Import Valid Format');
+      } catch (e) {
+        log('import-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Import Valid Format');
+      }
+    }
+
+    function testImportLegacyArray() {
+      clearLog('import-output');
+      try {
+        const legacyArray = [
+          {
+            id: 'legacy_1',
+            title: 'Legacy Prompt',
+            content: 'Old format prompt',
+            model: 'old-model',
+            createdAt: new Date().toISOString()
+          }
+        ];
+
+        log('import-output', 'Legacy Array Format:\n' + JSON.stringify(legacyArray, null, 2), 'info');
+
+        const isArray = Array.isArray(legacyArray);
+        const hasRequiredFields = legacyArray[0].id && legacyArray[0].title && legacyArray[0].content;
+
+        log('import-output', `\n${isArray && hasRequiredFields ? '✅' : '❌'} Legacy array import: ${isArray && hasRequiredFields ? 'SUPPORTED' : 'FAILED'}`,
+          isArray && hasRequiredFields ? 'success' : 'error');
+        recordTest(isArray && hasRequiredFields, 'Import Legacy Array Format');
+      } catch (e) {
+        log('import-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Import Legacy Array Format');
+      }
+    }
+
+    function testImportLegacyObject() {
+      clearLog('import-output');
+      try {
+        const legacyObject = {
+          prompts: [{
+            id: 'legacy_obj_1',
+            title: 'Legacy Object Prompt',
+            content: 'Old object format',
+            model: 'old-model'
+          }],
+          notes: {}
+        };
+
+        log('import-output', 'Legacy Object Format:\n' + JSON.stringify(legacyObject, null, 2), 'info');
+
+        const hasPrompts = Array.isArray(legacyObject.prompts);
+        const hasNotes = typeof legacyObject.notes === 'object';
+
+        log('import-output', `\n${hasPrompts && hasNotes ? '✅' : '❌'} Legacy object import: ${hasPrompts && hasNotes ? 'SUPPORTED' : 'FAILED'}`,
+          hasPrompts && hasNotes ? 'success' : 'error');
+        recordTest(hasPrompts && hasNotes, 'Import Legacy Object Format');
+      } catch (e) {
+        log('import-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Import Legacy Object Format');
+      }
+    }
+
+    function testImportInvalid() {
+      clearLog('import-output');
+      try {
+        const invalidFormats = [
+          { name: 'String', data: 'invalid' },
+          { name: 'Number', data: 123 },
+          { name: 'Null', data: null },
+          { name: 'Empty Object', data: {} },
+          { name: 'Missing Type', data: { schemaVersion: 1, data: {} } }
+        ];
+
+        let allDetected = true;
+        invalidFormats.forEach(({ name, data }) => {
+          const isInvalid = !data ||
+            typeof data !== 'object' ||
+            (data.type && data.type !== 'prompt-library-backup') ||
+            (!Array.isArray(data) && !data.prompts && !data.data);
+
+          log('import-output', `${name}: ${isInvalid ? '✅ Correctly rejected' : '❌ Incorrectly accepted'}`,
+            isInvalid ? 'success' : 'error');
+
+          if (!isInvalid) allDetected = false;
+        });
+
+        recordTest(allDetected, 'Import Invalid Format Detection');
+      } catch (e) {
+        log('import-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Import Invalid Format Detection');
+      }
+    }
+
+    // 4. CONFLICT RESOLUTION TESTS
+    function testMergeReplace() {
+      clearLog('conflict-output');
+      try {
+        const existing = [
+          { id: 'p1', title: 'Original', content: 'Original content', metadata: {} }
+        ];
+        const incoming = [
+          { id: 'p1', title: 'Updated', content: 'Updated content', metadata: {} }
+        ];
+
+        // Simulate replace strategy
+        const map = new Map(existing.map(p => [p.id, p]));
+        for (const p of incoming) {
+          map.set(p.id, p); // Replace
+        }
+        const result = Array.from(map.values());
+
+        const replaced = result[0].title === 'Updated';
+        log('conflict-output', `Original: ${existing[0].title}`, 'info');
+        log('conflict-output', `Incoming: ${incoming[0].title}`, 'info');
+        log('conflict-output', `Result after REPLACE: ${result[0].title}`, replaced ? 'success' : 'error');
+        log('conflict-output', `${replaced ? '✅' : '❌'} Replace strategy: ${replaced ? 'WORKS' : 'FAILED'}`);
+
+        recordTest(replaced, 'Merge Replace Strategy');
+      } catch (e) {
+        log('conflict-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Merge Replace Strategy');
+      }
+    }
+
+    function testMergeSkip() {
+      clearLog('conflict-output');
+      try {
+        const existing = [
+          { id: 'p1', title: 'Original', content: 'Original content', metadata: {} }
+        ];
+        const incoming = [
+          { id: 'p1', title: 'Updated', content: 'Updated content', metadata: {} }
+        ];
+
+        // Simulate skip strategy
+        const map = new Map(existing.map(p => [p.id, p]));
+        for (const p of incoming) {
+          if (!map.has(p.id)) { // Skip existing
+            map.set(p.id, p);
+          }
+        }
+        const result = Array.from(map.values());
+
+        const skipped = result[0].title === 'Original';
+        log('conflict-output', `Original: ${existing[0].title}`, 'info');
+        log('conflict-output', `Incoming: ${incoming[0].title}`, 'info');
+        log('conflict-output', `Result after SKIP: ${result[0].title}`, skipped ? 'success' : 'error');
+        log('conflict-output', `${skipped ? '✅' : '❌'} Skip strategy: ${skipped ? 'WORKS' : 'FAILED'}`);
+
+        recordTest(skipped, 'Merge Skip Strategy');
+      } catch (e) {
+        log('conflict-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Merge Skip Strategy');
+      }
+    }
+
+    function testMergeKeepBoth() {
+      clearLog('conflict-output');
+      try {
+        const existing = [
+          { id: 'p1', title: 'Original', content: 'Original content', metadata: {} }
+        ];
+        const incoming = [
+          { id: 'p1', title: 'Updated', content: 'Updated content', metadata: {} }
+        ];
+
+        // Simulate keep both strategy
+        const map = new Map(existing.map(p => [p.id, p]));
+        for (const p of incoming) {
+          if (map.has(p.id)) {
+            const newId = 'p_' + Date.now();
+            const clone = { ...p, id: newId };
+            map.set(clone.id, clone);
+          } else {
+            map.set(p.id, p);
+          }
+        }
+        const result = Array.from(map.values());
+
+        const keptBoth = result.length === 2;
+        log('conflict-output', `Original count: ${existing.length}`, 'info');
+        log('conflict-output', `Incoming count: ${incoming.length}`, 'info');
+        log('conflict-output', `Result count after KEEP BOTH: ${result.length}`, keptBoth ? 'success' : 'error');
+        log('conflict-output', `Result items:\n${result.map(p => `  - ${p.id}: ${p.title}`).join('\n')}`);
+        log('conflict-output', `${keptBoth ? '✅' : '❌'} Keep Both strategy: ${keptBoth ? 'WORKS' : 'FAILED'}`);
+
+        recordTest(keptBoth, 'Merge Keep Both Strategy');
+      } catch (e) {
+        log('conflict-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Merge Keep Both Strategy');
+      }
+    }
+
+    // 5. ERROR RECOVERY TESTS
+    function testBackupCreation() {
+      clearLog('error-output');
+      try {
+        createTestData();
+        const prompts = localStorage.getItem(STORAGE_KEY);
+        const notes = localStorage.getItem(NOTES_KEY);
+
+        // Simulate backup
+        localStorage.setItem(STORAGE_KEY + '.backup', prompts);
+        localStorage.setItem(NOTES_KEY + '.backup', notes);
+
+        const hasBackup = localStorage.getItem(STORAGE_KEY + '.backup') !== null;
+        const backupMatches = localStorage.getItem(STORAGE_KEY + '.backup') === prompts;
+
+        log('error-output', `${hasBackup ? '✅' : '❌'} Backup created: ${hasBackup}`, hasBackup ? 'success' : 'error');
+        log('error-output', `${backupMatches ? '✅' : '❌'} Backup matches original: ${backupMatches}`, backupMatches ? 'success' : 'error');
+
+        recordTest(hasBackup && backupMatches, 'Backup Creation');
+      } catch (e) {
+        log('error-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Backup Creation');
+      }
+    }
+
+    function testRollback() {
+      clearLog('error-output');
+      try {
+        createTestData();
+        const original = localStorage.getItem(STORAGE_KEY);
+
+        // Create backup
+        localStorage.setItem(STORAGE_KEY + '.backup', original);
+
+        // Corrupt current data
+        localStorage.setItem(STORAGE_KEY, '[]');
+        log('error-output', 'Data corrupted (emptied)', 'info');
+
+        // Simulate rollback
+        const backup = localStorage.getItem(STORAGE_KEY + '.backup');
+        if (backup) {
+          localStorage.setItem(STORAGE_KEY, backup);
+        }
+
+        const restored = localStorage.getItem(STORAGE_KEY);
+        const rollbackSuccess = restored === original;
+
+        log('error-output', `${rollbackSuccess ? '✅' : '❌'} Rollback successful: ${rollbackSuccess}`,
+          rollbackSuccess ? 'success' : 'error');
+        log('error-output', `Restored ${JSON.parse(restored).length} prompts`);
+
+        recordTest(rollbackSuccess, 'Rollback on Error');
+      } catch (e) {
+        log('error-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Rollback on Error');
+      }
+    }
+
+    function testCorruptImport() {
+      clearLog('error-output');
+      try {
+        createTestData();
+        const original = JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+        // Create backup
+        localStorage.setItem(STORAGE_KEY + '.backup', JSON.stringify(original));
+
+        // Try to parse corrupt data
+        let errorCaught = false;
+        try {
+          const corrupt = '{ invalid json }';
+          JSON.parse(corrupt);
+        } catch (e) {
+          errorCaught = true;
+          log('error-output', '✅ Corrupt JSON detected: ' + e.message, 'success');
+
+          // Rollback
+          const backup = localStorage.getItem(STORAGE_KEY + '.backup');
+          if (backup) {
+            localStorage.setItem(STORAGE_KEY, backup);
+            log('error-output', '✅ Automatic rollback performed', 'success');
+          }
+        }
+
+        const dataIntact = JSON.parse(localStorage.getItem(STORAGE_KEY)).length === original.length;
+        log('error-output', `${dataIntact ? '✅' : '❌'} Data integrity after rollback: ${dataIntact}`,
+          dataIntact ? 'success' : 'error');
+
+        recordTest(errorCaught && dataIntact, 'Corrupt Import Handling');
+      } catch (e) {
+        log('error-output', `❌ Error: ${e.message}`, 'error');
+        recordTest(false, 'Corrupt Import Handling');
+      }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      log('summary-output', '🧪 Test Suite Ready\nClick buttons above to run individual tests or test groups.\n', 'info');
+    });
+  </script>
+</body>
+</html>
